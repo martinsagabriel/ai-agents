@@ -1,0 +1,56 @@
+{
+  "tabelas": [
+    {
+      "nome": "Cliente",
+      "descricao": "Armazena informações dos clientes.",
+      "campos": [
+        { "nome": "id_cliente", "tipo": "INT", "descricao": "Identificador único do cliente" },
+        { "nome": "nome", "tipo": "VARCHAR(100)", "descricao": "Nome completo do cliente" },
+        { "nome": "email", "tipo": "VARCHAR(100)", "descricao": "E-mail do cliente (único)" },
+        { "nome": "telefone", "tipo": "VARCHAR(20)", "descricao": "Telefone de contato" },
+        { "nome": "data_cadastro", "tipo": "DATETIME", "descricao": "Data e hora de cadastro no sistema" }
+      ]
+    },
+    {
+      "nome": "Produto",
+      "descricao": "Armazena os produtos disponíveis para venda.",
+      "campos": [
+        { "nome": "id_produto", "tipo": "INT", "descricao": "Identificador único do produto" },
+        { "nome": "nome", "tipo": "VARCHAR(100)", "descricao": "Nome do produto" },
+        { "nome": "descricao", "tipo": "TEXT", "descricao": "Descrição detalhada do produto" },
+        { "nome": "preco_unitario", "tipo": "DECIMAL(10,2)", "descricao": "Preço de venda unitário" },
+        { "nome": "estoque", "tipo": "INT", "descricao": "Quantidade disponível em estoque" }
+      ]
+    },
+    {
+      "nome": "FormaPagamento",
+      "descricao": "Lista as formas de pagamento aceitas no sistema.",
+      "campos": [
+        { "nome": "id_forma_pagamento", "tipo": "INT", "descricao": "Identificador da forma de pagamento" },
+        { "nome": "descricao", "tipo": "VARCHAR(50)", "descricao": "Descrição da forma de pagamento" }
+      ]
+    },
+    {
+      "nome": "Pedido",
+      "descricao": "Registra os pedidos realizados pelos clientes.",
+      "campos": [
+        { "nome": "id_pedido", "tipo": "INT", "descricao": "Identificador único do pedido" },
+        { "nome": "id_cliente", "tipo": "INT", "descricao": "Referência ao cliente que fez o pedido" },
+        { "nome": "id_forma_pagamento", "tipo": "INT", "descricao": "Forma de pagamento utilizada" },
+        { "nome": "data_pedido", "tipo": "DATETIME", "descricao": "Data e hora do pedido" },
+        { "nome": "valor_total", "tipo": "DECIMAL(10,2)", "descricao": "Valor total do pedido" }
+      ]
+    },
+    {
+      "nome": "ItemPedido",
+      "descricao": "Armazena os itens que compõem cada pedido.",
+      "campos": [
+        { "nome": "id_item_pedido", "tipo": "INT", "descricao": "Identificador único do item" },
+        { "nome": "id_pedido", "tipo": "INT", "descricao": "Referência ao pedido" },
+        { "nome": "id_produto", "tipo": "INT", "descricao": "Referência ao produto incluído no pedido" },
+        { "nome": "quantidade", "tipo": "INT", "descricao": "Quantidade de produtos comprados" },
+        { "nome": "preco_unitario", "tipo": "DECIMAL(10,2)", "descricao": "Preço do produto no momento da venda" }
+      ]
+    }
+  ]
+}
