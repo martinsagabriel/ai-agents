@@ -9,4 +9,6 @@ agent = Agent(
     markdown=True,
 )
 
-agent.print_response("What is the stock price of Apple?", stream=True)
+stock = input("Qual a contacao que deseja pesquisar? >> ")
+
+agent.print_response(f"What is the stock price of {stock}?", stream=True)
