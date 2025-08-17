@@ -2,6 +2,9 @@ import json
 import chromadb
 from chromadb.config import Settings
 from typing import Dict, List, Any, Optional
+import PyPDF2
+from docx import Document
+import os
 
 
 class ChromaDBManager:
@@ -13,6 +16,75 @@ class ChromaDBManager:
         with open(json_path, 'r', encoding='utf-8') as file:
             return json.load(file)
     
+    def load_pdf_data(self, pdf_path: str) -> str:
+        text = ""
+        try:
+            with open(pdf_path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                for page in pdf_reader.pages:
+                    text += page.extract_text() + "\n"
+        except Exception as e:
+            print(f"Erro ao ler PDF {pdf_path}: {e}")
+        return text
+    
+    def load_doc_data(self, doc_path: str) -> str:
+        text = ""
+        try:
+            doc = Document(doc_path)
+            for paragraph in doc.paragraphs:
+                text += paragraph.text + "\n"
+        except Exception as e:
+            print(f"Erro ao ler DOC {doc_path}: {e}")
+        return text
+    
+    def load_txt_data(self, txt_path: str) -> str:
+        try:
+            with open(txt_path, 'r', encoding='utf-8') as file:
+                return file.read()
+        except Exception as e:
+            print(f"Erro ao ler TXT {txt_path}: {e}")
+            return ""
+    
+    def detect_file_type_and_load(self, file_path: str) -> tuple[str, Any]:
+        file_extension = os.path.splitext(file_path)[1].lower()
+        
+        if file_extension == '.json':
+            return 'json', self.load_json_data(file_path)
+        elif file_extension == '.pdf':
+            return 'pdf', self.load_pdf_data(file_path)
+        elif file_extension in ['.doc', '.docx']:
+            return 'doc', self.load_doc_data(file_path)
+        elif file_extension == '.txt':
+            return 'txt', self.load_txt_data(file_path)
+        else:
+            raise ValueError(f"Tipo de arquivo não suportado: {file_extension}")
+    
+    def chunk_text(self, text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
+        if len(text) <= chunk_size:
+            return [text]
+        
+        chunks = []
+        start = 0
+        
+        while start < len(text):
+            end = start + chunk_size
+            chunk = text[start:end]
+            
+            # Tenta quebrar no final de uma frase
+            if end < len(text):
+                last_period = chunk.rfind('.')
+                last_newline = chunk.rfind('\n')
+                break_point = max(last_period, last_newline)
+                
+                if break_point > start + chunk_size * 0.5:  # Só quebra se for pelo menos na metade
+                    chunk = text[start:start + break_point + 1]
+                    end = start + break_point + 1
+            
+            chunks.append(chunk.strip())
+            start = end - overlap if end < len(text) else end
+            
+        return chunks
+    
     def create_or_get_collection(self, collection_name: str):
         try:
             collection = self.client.get_collection(name=collection_name)
@@ -20,12 +92,13 @@ class ChromaDBManager:
             collection = self.client.create_collection(name=collection_name)
         return collection
     
-    def add_data_to_chromadb(self, data: Dict[str, Any], collection) -> int:
+    def add_data_to_chromadb(self, data: Any, collection, data_type: str = 'json', file_name: str = '') -> int:
         documents = []
         metadatas = []
         ids = []
         
-        if "tabelas" in data:
+        if data_type == 'json' and "tabelas" in data:
+            # Processamento de dados JSON (schema de banco)
             for i, tabela in enumerate(data["tabelas"]):
                 doc_text = f"Tabela: {tabela['nome']}\nDescrição: {tabela['descricao']}\nCampos:\n"
                 
@@ -36,9 +109,39 @@ class ChromaDBManager:
                 metadatas.append({
                     "nome_tabela": tabela['nome'],
                     "tipo": "schema_tabela",
-                    "descricao": tabela['descricao']
+                    "descricao": tabela['descricao'],
+                    "arquivo_origem": file_name
                 })
                 ids.append(f"tabela_{i}")
+                
+        elif data_type in ['pdf', 'doc', 'txt']:
+            # Processamento de texto (PDF, DOC, TXT)
+            text_chunks = self.chunk_text(data)
+            
+            for i, chunk in enumerate(text_chunks):
+                documents.append(chunk)
+                metadatas.append({
+                    "tipo": f"documento_{data_type}",
+                    "chunk_id": i,
+                    "arquivo_origem": file_name,
+                    "total_chunks": len(text_chunks)
+                })
+                ids.append(f"{file_name}_{data_type}_chunk_{i}")
+        
+        elif data_type == 'json':
+            # Processamento genérico de JSON
+            json_str = json.dumps(data, ensure_ascii=False, indent=2)
+            text_chunks = self.chunk_text(json_str)
+            
+            for i, chunk in enumerate(text_chunks):
+                documents.append(chunk)
+                metadatas.append({
+                    "tipo": "documento_json",
+                    "chunk_id": i,
+                    "arquivo_origem": file_name,
+                    "total_chunks": len(text_chunks)
+                })
+                ids.append(f"{file_name}_json_chunk_{i}")
         
         if documents:
             collection.add(
@@ -56,11 +159,28 @@ class ChromaDBManager:
         )
         return results
     
-    def initialize_knowledge_base(self, file_path: str, collection_name: str):        
-        data = self.load_json_data(file_path)
+    def initialize_knowledge_base(self, file_path: str, collection_name: str):
+        file_name = os.path.basename(file_path)
+        data_type, data = self.detect_file_type_and_load(file_path)
         collection = self.create_or_get_collection(collection_name)
-        num_documents = self.add_data_to_chromadb(data, collection)
+        num_documents = self.add_data_to_chromadb(data, collection, data_type, file_name)
         return collection, num_documents
+    
+    def add_files_to_knowledge_base(self, file_paths: List[str], collection_name: str):
+        collection = self.create_or_get_collection(collection_name)
+        total_documents = 0
+        
+        for file_path in file_paths:
+            try:
+                file_name = os.path.basename(file_path)
+                data_type, data = self.detect_file_type_and_load(file_path)
+                num_documents = self.add_data_to_chromadb(data, collection, data_type, file_name)
+                total_documents += num_documents
+                print(f"Adicionado: {file_name} ({data_type}) - {num_documents} documentos")
+            except Exception as e:
+                print(f"Erro ao processar {file_path}: {e}")
+        
+        return collection, total_documents
     
     def get_context_from_search(self, search_results: Dict[str, Any]) -> str:
         context = ""

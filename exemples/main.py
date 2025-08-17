@@ -1,7 +1,7 @@
 from vectordb import ChromaDBManager
 from llm_client import LLMClient
 from typing import Tuple
-
+from typing import List
 
 class RAGApplication:
     
@@ -13,11 +13,13 @@ class RAGApplication:
         self.collection = None
         self.system_message = ""
     
-    def initialize_knowledge_base(self, json_path: str, collection_name: str, prompt_file_path: str):
+    def initialize_knowledge_base(self, files_path: List[str], collection_name: str, prompt_file_path: str):
         print("Inicializando base de conhecimento...")
         
         self.system_message = self.llm_client.load_prompt_file(prompt_file_path)        
-        self.collection, num_documents = self.vectordb.initialize_knowledge_base(json_path, collection_name)
+        self.collection, num_documents = self.vectordb.add_files_to_knowledge_base(files_path, collection_name)
+        
+        print(f"Base de conhecimento iniciada com sucesso! {num_documents} documentos adicionados.")
     
         return self.collection
     
@@ -44,20 +46,24 @@ class RAGApplication:
 
 def main():
     collection_name = 'data_catalog'
-    json_path = "../tmp/knowledge_base/schema.json"
+    files_path = ["../tmp/knowledge_base/VeiculosEletricosnoBrasil.pdf"]
     prompt_file_path = "../tmp/prompts/data_catalog.txt"
     
     rag_app = RAGApplication()
     
     try:
-        rag_app.initialize_knowledge_base(json_path, collection_name, prompt_file_path)
+        rag_app.initialize_knowledge_base(files_path, collection_name, prompt_file_path)
 
         while True:
             question = input(f"\nPergunta: ")
+            
+            if question.lower() in ['exit', 'quit', 'sair']:
+                print("Saindo da aplicação...")
+                break
 
             print("\n=== Resposta com RAG ===")
             response, context = rag_app.query_with_rag(question)
-        # print(f"Contexto encontrado:\n{context}")
+            # print(f"Contexto encontrado:\n{context}")
             print(f"\nResposta: {response}")
         
         # # Exemplo de busca simples no vector database
