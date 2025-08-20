@@ -11,6 +11,9 @@ class LLMClient:
         self.client = Groq(api_key=os.getenv('GROQ_API_KEY'))
     
     def load_prompt_file(self, file_path: Optional[str] = None) -> str:
+        if file_path == "" or file_path == None:
+            file_path = "../tmp/prompts/base_prompt.txt"
+            
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     

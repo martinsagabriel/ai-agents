@@ -3,6 +3,14 @@ from llm_client import LLMClient
 from typing import Tuple
 from typing import List
 
+
+RESET = '\033[0m'
+BOLD = '\033[1m'
+
+RED = '\033[31m'
+GREEN = '\033[32m'
+YELLOW = '\033[33m'
+
 class RAGApplication:
     
     def __init__(self, 
@@ -45,31 +53,32 @@ class RAGApplication:
 
 
 def main():
-    collection_name = 'data_catalog'
-    files_path = ["../tmp/knowledge_base/VeiculosEletricosnoBrasil.pdf"]
-    prompt_file_path = "../tmp/prompts/data_catalog.txt"
-    
+    collection_name = 'schema'
+    files_path = ["../tmp/knowledge_base/schema.json"]
+    prompt_file_path = "../tmp/prompts/data_catalog.txt" # Prompt file for the data catalog
+
     rag_app = RAGApplication()
     
     try:
         rag_app.initialize_knowledge_base(files_path, collection_name, prompt_file_path)
 
         while True:
-            question = input(f"\nPergunta: ")
+            
+            question = input(f"{BOLD}{YELLOW}{'=' * 20} Pergunta {'=' * 20}{RESET}\n")
             
             if question.lower() in ['exit', 'quit', 'sair']:
-                print("Saindo da aplicação...")
+                print(f"{BOLD}{RED}Saindo da aplicação...{RESET}")
                 break
 
-            print("\n=== Resposta com RAG ===")
+            print(f"\n{BOLD}{GREEN}{'=' * 20} Resposta com RAG {'=' * 20}{RESET}\n")
             response, context = rag_app.query_with_rag(question)
             # print(f"Contexto encontrado:\n{context}")
-            print(f"\nResposta: {response}")
+            print(f"{response}\n")
         
         # # Exemplo de busca simples no vector database
         # print("\n=== Busca simples no vector database ===")
         # search_results = rag_app.simple_search(question)
-        # print("Documentos encontrados:")
+        # print("Documentos encontrados:")  
         # for i, doc in enumerate(search_results['documents'][0]):
         #     print(f"{i+1}. {doc[:100]}...")
     
