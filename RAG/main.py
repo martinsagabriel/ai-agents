@@ -54,7 +54,7 @@ class RAGApplication:
 
 def main():
     collection_name = 'schema'
-    files_path = ["../tmp/knowledge_base/schema.json"]
+    files_path = ["../tmp/knowledge_base/schema.json", "../tmp/knowledge_base/regras_negocio.pdf"]
     prompt_file_path = "../tmp/prompts/data_catalog.txt" # Prompt file for the data catalog
 
     rag_app = RAGApplication()
@@ -66,11 +66,11 @@ def main():
             
             question = input(f"{BOLD}{YELLOW}{'=' * 20} Pergunta {'=' * 20}{RESET}\n")
             
-            if question.lower() in ['exit', 'quit', 'sair']:
+            if question.lower() in ['exit', 'quit', 'sair', 'bye']:
                 print(f"{BOLD}{RED}Saindo da aplicação...{RESET}")
                 break
 
-            print(f"\n{BOLD}{GREEN}{'=' * 20} Resposta com RAG {'=' * 20}{RESET}\n")
+            print(f"\n{BOLD}{GREEN}{'=' * 20} Resposta com RAG {'=' * 20}{RESET}")
             response, context = rag_app.query_with_rag(question)
             # print(f"Contexto encontrado:\n{context}")
             print(f"{response}\n")

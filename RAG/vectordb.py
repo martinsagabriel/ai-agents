@@ -1,63 +1,16 @@
 import json
 import chromadb
 from chromadb.config import Settings
-from typing import Dict, List, Any, Optional
-import PyPDF2
-from docx import Document
+from typing import Dict, List, Any
 import os
+from file_process import FileProcessor
 
 
 class ChromaDBManager:
     
     def __init__(self, persist_directory: str = "../tmp/chromadb"):
         self.client = chromadb.PersistentClient(path=persist_directory)
-    
-    def load_json_data(self, json_path: str) -> Dict[str, Any]:
-        with open(json_path, 'r', encoding='utf-8') as file:
-            return json.load(file)
-    
-    def load_pdf_data(self, pdf_path: str) -> str:
-        text = ""
-        try:
-            with open(pdf_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
-                for page in pdf_reader.pages:
-                    text += page.extract_text() + "\n"
-        except Exception as e:
-            print(f"Erro ao ler PDF {pdf_path}: {e}")
-        return text
-    
-    def load_doc_data(self, doc_path: str) -> str:
-        text = ""
-        try:
-            doc = Document(doc_path)
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
-        except Exception as e:
-            print(f"Erro ao ler DOC {doc_path}: {e}")
-        return text
-    
-    def load_txt_data(self, txt_path: str) -> str:
-        try:
-            with open(txt_path, 'r', encoding='utf-8') as file:
-                return file.read()
-        except Exception as e:
-            print(f"Erro ao ler TXT {txt_path}: {e}")
-            return ""
-    
-    def detect_file_type_and_load(self, file_path: str) -> tuple[str, Any]:
-        file_extension = os.path.splitext(file_path)[1].lower()
-        
-        if file_extension == '.json':
-            return 'json', self.load_json_data(file_path)
-        elif file_extension == '.pdf':
-            return 'pdf', self.load_pdf_data(file_path)
-        elif file_extension in ['.doc', '.docx']:
-            return 'doc', self.load_doc_data(file_path)
-        elif file_extension == '.txt':
-            return 'txt', self.load_txt_data(file_path)
-        else:
-            raise ValueError(f"Tipo de arquivo não suportado: {file_extension}")
+        self.file_processor = FileProcessor(file_path="")
     
     def chunk_text(self, text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
         if len(text) <= chunk_size:
@@ -161,7 +114,7 @@ class ChromaDBManager:
     
     def initialize_knowledge_base(self, file_path: str, collection_name: str):
         file_name = os.path.basename(file_path)
-        data_type, data = self.detect_file_type_and_load(file_path)
+        data_type, data = self.file_processor.detect_file_type_and_load(file_path)
         collection = self.create_or_get_collection(collection_name)
         num_documents = self.add_data_to_chromadb(data, collection, data_type, file_name)
         return collection, num_documents
@@ -173,7 +126,7 @@ class ChromaDBManager:
         for file_path in file_paths:
             try:
                 file_name = os.path.basename(file_path)
-                data_type, data = self.detect_file_type_and_load(file_path)
+                data_type, data = self.file_processor.detect_file_type_and_load(file_path)
                 num_documents = self.add_data_to_chromadb(data, collection, data_type, file_name)
                 total_documents += num_documents
                 print(f"Adicionado: {file_name} ({data_type}) - {num_documents} documentos")

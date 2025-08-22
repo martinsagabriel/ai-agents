@@ -1,3 +1,3 @@
 # AI Agents Project
 
-Um projeto de agentes de IA utilizando a biblioteca Agno com integração ao modelo Groq para análise de dados financeiros.
+Minha biblioteca pessoal de agentes de IA, teste e validacoes de casos tecnicos.
