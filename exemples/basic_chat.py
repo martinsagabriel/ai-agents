@@ -3,7 +3,7 @@ import os
 
 from groq import Groq
 
-load_dotenv('.env')
+load_dotenv('../.env')
 MODEL = 'openai/gpt-oss-120b'
 
 RESET = '\033[0m'
@@ -39,4 +39,5 @@ while session == True:
         break
 
     response = chat(user_question)
-    print(f"\n{BOLD}{GREEN}Resposta: {response} {RESET}")    
+    print(f"\n{BOLD}{GREEN}Resposta:{RESET}")
+    print(f"{GREEN}{response}{RESET}")

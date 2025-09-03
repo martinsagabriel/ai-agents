@@ -1,8 +1,6 @@
 from vectordb import ChromaDBManager
 from llm_client import LLMClient
-from typing import Tuple
-from typing import List
-
+from typing import Tuple, List
 
 RESET = '\033[0m'
 BOLD = '\033[1m'
